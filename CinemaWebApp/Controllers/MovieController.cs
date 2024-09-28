@@ -1,15 +1,22 @@
 ﻿using CinemaWebApp.Models;
+using CinemaWebApp.Models.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaWebApp.Controllers
 {
     public class MovieController : Controller
     {
-        private static List<Movie> movies = new List<Movie>();
+        private readonly CinemaDbContext _context;
+
+        public MovieController(CinemaDbContext context)
+        {
+            _context = context;
+        }
         public IActionResult Index()
         {
+            var movies = _context.Movies.ToList();
             return View(movies);
-        }
+        } 
 
         [HttpGet]
         public IActionResult Create()
@@ -17,18 +24,22 @@ namespace CinemaWebApp.Controllers
             return View();
         }
 
+        [HttpPost]
         public IActionResult Create(Movie movie)
         {
-            movie.Id = movies.Count + 1;
+          if(ModelState.IsValid)
+            {
+                _context.Movies.Add(movie);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
 
-            movies.Add(movie);
-
-            return RedirectToAction("Index");
+            return View(movie);
         }
 
         public IActionResult Details(int id)
         {
-            Movie movie = movies.Find(m => m.Id == id);
+            Movie movie = _context.Movies.Find(id);
 
             if (movie == null)
             {
