@@ -1,45 +1,51 @@
 ﻿using CinemaWebApp.Models;
 using CinemaWebApp.Models.Data;
+using CinemaWebApp.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaWebApp.Controllers
 {
-    public class MovieController : Controller
+    public class MovieController(CinemaDbContext context) : Controller
     {
-        private readonly CinemaDbContext _context;
-
-        public MovieController(CinemaDbContext context)
-        {
-            _context = context;
-        }
         public IActionResult Index()
         {
-            var movies = _context.Movies.ToList();
+            var movies = context.Movies.ToList();
             return View(movies);
         } 
 
         [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            return View(new MovieViewModel());
         }
 
         [HttpPost]
-        public IActionResult Create(Movie movie)
+        public IActionResult Create(MovieViewModel movie)
         {
-          if(ModelState.IsValid)
+            if(!ModelState.IsValid)
             {
-                _context.Movies.Add(movie);
-                _context.SaveChanges();
-                return RedirectToAction("Index");
+                return View(movie);
             }
 
-            return View(movie);
+            var newMovie = new Movie
+            {
+                Title = movie.Title,
+                Genre = movie.Genre,
+                ReleaseDate = movie.ReleaseDate,
+                Director = movie.Director,
+                Duration = movie.Duration,
+                Description = movie.Description,
+            };
+
+            context.Movies.Add(newMovie);
+            context.SaveChanges();
+
+            return RedirectToAction("Index");
         }
 
         public IActionResult Details(int id)
         {
-            Movie movie = _context.Movies.Find(id);
+            Movie movie = context.Movies.Find(id);
 
             if (movie == null)
             {

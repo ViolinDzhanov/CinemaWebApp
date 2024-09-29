@@ -11,5 +11,29 @@ namespace CinemaWebApp.Models.Data
         }
 
         public DbSet<Movie> Movies { get; set; }
+        public DbSet<Cinema> Cinemas { get; set; }
+        public DbSet<CinemaMovie> CinemasMovies { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<CinemaMovie>()
+                .HasKey(cm => new
+                {
+                    cm.CinemaId,
+                    cm.MovieId
+                });
+
+            modelBuilder.Entity<CinemaMovie>()
+                .HasOne(cm => cm.Cinema)
+                .WithMany(c => c.CinemaMovies)
+                .HasForeignKey(cm => cm.CinemaId);
+
+            modelBuilder.Entity<CinemaMovie>()
+                .HasOne(cm => cm.Movie)
+                .WithMany(m => m.CinemaMovies)
+                .HasForeignKey(cm => cm.MovieId);
+        }
     }
 }
