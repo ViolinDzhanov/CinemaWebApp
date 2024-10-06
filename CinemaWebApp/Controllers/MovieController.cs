@@ -1,6 +1,6 @@
 ﻿using CinemaWebApp.Models;
 using CinemaWebApp.Models.Data;
-using CinemaWebApp.Models.ViewModels;
+using CinemaWebApp.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaWebApp.Controllers
@@ -43,9 +43,9 @@ namespace CinemaWebApp.Controllers
             return RedirectToAction("Index");
         }
 
-        public IActionResult Details(int id)
+        public IActionResult Details(Guid id)
         {
-            Movie movie = context.Movies.Find(id);
+            Movie movie = context.Movies.FirstOrDefault(m => m.Id == id);
 
             if (movie == null)
             {
@@ -55,5 +55,32 @@ namespace CinemaWebApp.Controllers
             return View(movie);
         }
 
+        [HttpGet]
+        public IActionResult AddToProgram(Guid movieId)
+        {
+            var movie = context.Movies.Find(movieId);
+
+            if (movie == null)
+            {
+                return RedirectToAction("Index");
+            }
+
+            var cinemas = context.Cinemas.ToList();
+
+            var viewModel = new AddMovieToCinemaProgramViewModel
+            {
+                MovieId = movie.Id.ToString(),
+                MovieTitle = movie.Title,
+                Cinemas = cinemas.Select(c => new CinemaCheckBoxItem
+                {
+                    Id = movie.Id.ToString(),
+                    Name = c.Name,
+                    IsSelected = false
+                })
+                .ToList()
+            };
+
+            return View(viewModel); 
+        }
     }
 }

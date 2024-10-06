@@ -13,6 +13,6 @@ namespace CinemaWebApp.Models
         [Required]
         public string Location { get; set; } = null!;
         public virtual ICollection<CinemaMovie> CinemaMovies { get; set; } 
-            =new HashSet<CinemaMovie>();
+            = new HashSet<CinemaMovie>();
     }
 }
