@@ -45,7 +45,7 @@ namespace CinemaWebApp.Controllers
 
         public IActionResult Details(Guid id)
         {
-            Movie movie = context.Movies.FirstOrDefault(m => m.Id == id);
+            Movie movie = context.Movies.Find(id);
 
             if (movie == null)
             {
@@ -56,16 +56,21 @@ namespace CinemaWebApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult AddToProgram(Guid movieId)
+        public IActionResult AddToProgram(Guid id)
         {
-            var movie = context.Movies.Find(movieId);
+            Movie movie = context.Movies.Find(id);
 
-            if (movie == null)
+            if (movie is null)
             {
                 return RedirectToAction("Index");
             }
 
             var cinemas = context.Cinemas.ToList();
+
+            var cinemaMovies = context.CinemasMovies
+                .Where(cm => cm.MovieId == movie.Id)
+                .Select(cm => cm.CinemaId)
+                .ToList();
 
             var viewModel = new AddMovieToCinemaProgramViewModel
             {
@@ -73,14 +78,99 @@ namespace CinemaWebApp.Controllers
                 MovieTitle = movie.Title,
                 Cinemas = cinemas.Select(c => new CinemaCheckBoxItem
                 {
-                    Id = movie.Id.ToString(),
+                    Id = c.Id.ToString(),
                     Name = c.Name,
                     IsSelected = false
                 })
                 .ToList()
             };
 
-            return View(viewModel); 
+            foreach (var cinema in viewModel.Cinemas)
+            {
+                if (cinemaMovies.Contains(Guid.Parse(cinema.Id)))
+                {
+                    cinema.IsSelected = true;
+                }
+            }
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public IActionResult AddToProgram(AddMovieToCinemaProgramViewModel viewModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(viewModel);
+            }
+
+            var movie = context.Movies.Find(Guid.Parse(viewModel.MovieId));
+
+            if (movie is null)
+            {
+                return RedirectToAction("Index");
+            }
+
+            var selectedCinemas = viewModel.Cinemas
+                .Where(c => c.IsSelected)
+                .Select(c => Guid.Parse(c.Id))
+                .ToList();
+
+           
+
+            // Determine which cinemas to remove (deselected cinemas)
+         
+
+            // Remove the movie from deselected cinemas
+            //var cinemasMoviesToRemove = context.CinemasMovies
+            //    .Where(cm => cm.MovieId == movie.Id && deselectedCinemas.Contains(cm.CinemaId))
+            //    .ToList();
+
+            //context.CinemasMovies.RemoveRange(cinemasMoviesToRemove);
+
+            foreach (var cinemaId in selectedCinemas)
+            {
+                var cinema = context.Cinemas.Find(cinemaId);
+                if (cinema is null )
+                {
+                    continue;
+                }
+                var cinemaMovie = new CinemaMovie
+                {
+                    Cinema = cinema,
+                    Movie = movie
+                };
+
+                var existingCinemaMovie = context.CinemasMovies
+                    .Where(cm => cm.MovieId == movie.Id && cm.CinemaId == cinema.Id)
+                    .FirstOrDefault();
+
+                if (existingCinemaMovie != null)
+                {
+                    continue;
+                }
+
+                context.CinemasMovies.Add(cinemaMovie);
+            }
+
+            var deselectedCinemas = viewModel.Cinemas
+             .Where(c => !c.IsSelected)
+             .ToList();
+
+            foreach (var cinema in deselectedCinemas)
+            {
+                var cinemaMovie = context.CinemasMovies
+                    .Where(cm => cm.MovieId == movie.Id && cm.CinemaId == Guid.Parse(cinema.Id))
+                    .FirstOrDefault();
+                if (cinemaMovie is not null)
+                {
+                    context.CinemasMovies.Remove(cinemaMovie);
+                }
+            }
+
+            context.SaveChanges();
+
+            return RedirectToAction("Index");
         }
     }
 }
