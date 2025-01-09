@@ -1,4 +1,5 @@
 using CinemaWebApp.Models.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CinemaWebApp
@@ -17,6 +18,9 @@ namespace CinemaWebApp
                 opttions.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
+            builder.Services.AddDefaultIdentity<IdentityUser>()
+                           .AddEntityFrameworkStores<CinemaDbContext>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -32,7 +36,10 @@ namespace CinemaWebApp
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
+
+            app.MapRazorPages();
 
             app.MapControllerRoute(
                 name: "default",
